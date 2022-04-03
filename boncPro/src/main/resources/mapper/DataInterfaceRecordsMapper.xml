@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ljz.mapper.DataInterfaceRecordsMapper">
+  <resultMap id="BaseResultMap" type="com.ljz.model.DataInterfaceRecords">
+    <id column="need_vrsn_nbr" jdbcType="VARCHAR" property="needVrsnNbr" />
+    <id column="expt_seq_nbr" jdbcType="VARCHAR" property="exptSeqNbr" />
+    <id column="data_src_abbr" jdbcType="VARCHAR" property="dataSrcAbbr" />
+    <result column="expt_file_name" jdbcType="VARCHAR" property="exptFileName" />
+    <result column="intf_tot" jdbcType="VARCHAR" property="intfTot" />
+    <result column="intf_new" jdbcType="VARCHAR" property="intfNew" />
+    <result column="intf_alt" jdbcType="VARCHAR" property="intfAlt" />
+    <result column="intf_dscr" jdbcType="VARCHAR" property="intfDscr" />
+    <result column="create_date" jdbcType="VARCHAR" property="createDate" />
+    <result column="alt_date" jdbcType="VARCHAR" property="altDate" />
+    <result column="exct_psn" jdbcType="VARCHAR" property="exctPsn" />
+    <result column="expt_date" jdbcType="VARCHAR" property="exptDate" />
+  </resultMap>
+  <resultMap id="BaseResultMap2" type="com.ljz.model.DataInterfaceRecordsDetail">
+    <id column="need_vrsn_nbr" jdbcType="VARCHAR" property="needVrsnNbr" />
+    <id column="expt_seq_nbr" jdbcType="VARCHAR" property="exptSeqNbr" />
+    <id column="data_src_abbr" jdbcType="VARCHAR" property="dataSrcAbbr" />
+    <result column="data_interface_no" jdbcType="VARCHAR" property="dataInterfaceNo" />
+    <result column="data_interface_name" jdbcType="VARCHAR" property="dataInterfaceName" />
+    <result column="data_change" jdbcType="VARCHAR" property="dataChange" />
+    <result column="data_flag" jdbcType="VARCHAR" property="dataFlag" />
+  </resultMap>
+  <sql id="Base_Column_List">
+    need_vrsn_nbr, expt_seq_nbr, data_src_abbr, expt_file_name, intf_tot, intf_new, intf_alt, 
+    intf_dscr, create_date, alt_date, exct_psn, expt_date
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="com.ljz.model.DataInterfaceRecordsKey" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from data_interface_records
+    where need_vrsn_nbr = #{needVrsnNbr,jdbcType=VARCHAR}
+      and expt_seq_nbr = #{exptSeqNbr,jdbcType=VARCHAR}
+      and data_src_abbr = #{dataSrcAbbr,jdbcType=VARCHAR}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="com.ljz.model.DataInterfaceRecordsKey">
+    delete from data_interface_records
+    where need_vrsn_nbr = #{needVrsnNbr,jdbcType=VARCHAR}
+      and expt_seq_nbr = #{exptSeqNbr,jdbcType=VARCHAR}
+      and data_src_abbr = #{dataSrcAbbr,jdbcType=VARCHAR}
+  </delete>
+  <insert id="insert" parameterType="com.ljz.model.DataInterfaceRecords">
+    insert into data_interface_records (need_vrsn_nbr, expt_seq_nbr, data_src_abbr, 
+      expt_file_name, intf_tot, intf_new, 
+      intf_alt, intf_dscr, create_date, 
+      alt_date, exct_psn, expt_date
+      )
+    values (#{needVrsnNbr,jdbcType=VARCHAR}, #{exptSeqNbr,jdbcType=VARCHAR}, #{dataSrcAbbr,jdbcType=VARCHAR}, 
+      #{exptFileName,jdbcType=VARCHAR}, #{intfTot,jdbcType=VARCHAR}, #{intfNew,jdbcType=VARCHAR}, 
+      #{intfAlt,jdbcType=VARCHAR}, #{intfDscr,jdbcType=VARCHAR}, #{createDate,jdbcType=VARCHAR}, 
+      #{altDate,jdbcType=VARCHAR}, #{exctPsn,jdbcType=VARCHAR}, #{exptDate,jdbcType=VARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.ljz.model.DataInterfaceRecords">
+    insert into data_interface_records
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="needVrsnNbr != null">
+        need_vrsn_nbr,
+      </if>
+      <if test="exptSeqNbr != null">
+        expt_seq_nbr,
+      </if>
+      <if test="dataSrcAbbr != null">
+        data_src_abbr,
+      </if>
+      <if test="exptFileName != null">
+        expt_file_name,
+      </if>
+      <if test="intfTot != null">
+        intf_tot,
+      </if>
+      <if test="intfNew != null">
+        intf_new,
+      </if>
+      <if test="intfAlt != null">
+        intf_alt,
+      </if>
+      <if test="intfDscr != null">
+        intf_dscr,
+      </if>
+      <if test="createDate != null">
+        create_date,
+      </if>
+      <if test="altDate != null">
+        alt_date,
+      </if>
+      <if test="exctPsn != null">
+        exct_psn,
+      </if>
+      <if test="exptDate != null">
+        expt_date,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="needVrsnNbr != null">
+        #{needVrsnNbr,jdbcType=VARCHAR},
+      </if>
+      <if test="exptSeqNbr != null">
+        #{exptSeqNbr,jdbcType=VARCHAR},
+      </if>
+      <if test="dataSrcAbbr != null">
+        #{dataSrcAbbr,jdbcType=VARCHAR},
+      </if>
+      <if test="exptFileName != null">
+        #{exptFileName,jdbcType=VARCHAR},
+      </if>
+      <if test="intfTot != null">
+        #{intfTot,jdbcType=VARCHAR},
+      </if>
+      <if test="intfNew != null">
+        #{intfNew,jdbcType=VARCHAR},
+      </if>
+      <if test="intfAlt != null">
+        #{intfAlt,jdbcType=VARCHAR},
+      </if>
+      <if test="intfDscr != null">
+        #{intfDscr,jdbcType=VARCHAR},
+      </if>
+      <if test="createDate != null">
+        #{createDate,jdbcType=VARCHAR},
+      </if>
+      <if test="altDate != null">
+        #{altDate,jdbcType=VARCHAR},
+      </if>
+      <if test="exctPsn != null">
+        #{exctPsn,jdbcType=VARCHAR},
+      </if>
+      <if test="exptDate != null">
+        #{exptDate,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.ljz.model.DataInterfaceRecords">
+    update data_interface_records
+    <set>
+      <if test="exptFileName != null">
+        expt_file_name = #{exptFileName,jdbcType=VARCHAR},
+      </if>
+      <if test="intfTot != null">
+        intf_tot = #{intfTot,jdbcType=VARCHAR},
+      </if>
+      <if test="intfNew != null">
+        intf_new = #{intfNew,jdbcType=VARCHAR},
+      </if>
+      <if test="intfAlt != null">
+        intf_alt = #{intfAlt,jdbcType=VARCHAR},
+      </if>
+      <if test="intfDscr != null">
+        intf_dscr = #{intfDscr,jdbcType=VARCHAR},
+      </if>
+      <if test="createDate != null">
+        create_date = #{createDate,jdbcType=VARCHAR},
+      </if>
+      <if test="altDate != null">
+        alt_date = #{altDate,jdbcType=VARCHAR},
+      </if>
+      <if test="exctPsn != null">
+        exct_psn = #{exctPsn,jdbcType=VARCHAR},
+      </if>
+      <if test="exptDate != null">
+        expt_date = #{exptDate,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where need_vrsn_nbr = #{needVrsnNbr,jdbcType=VARCHAR}
+      and expt_seq_nbr = #{exptSeqNbr,jdbcType=VARCHAR}
+      and data_src_abbr = #{dataSrcAbbr,jdbcType=VARCHAR}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.ljz.model.DataInterfaceRecords">
+    update data_interface_records
+    set expt_file_name = #{exptFileName,jdbcType=VARCHAR},
+      intf_tot = #{intfTot,jdbcType=VARCHAR},
+      intf_new = #{intfNew,jdbcType=VARCHAR},
+      intf_alt = #{intfAlt,jdbcType=VARCHAR},
+      intf_dscr = #{intfDscr,jdbcType=VARCHAR},
+      create_date = #{createDate,jdbcType=VARCHAR},
+      alt_date = #{altDate,jdbcType=VARCHAR},
+      exct_psn = #{exctPsn,jdbcType=VARCHAR},
+      expt_date = #{exptDate,jdbcType=VARCHAR}
+    where need_vrsn_nbr = #{needVrsnNbr,jdbcType=VARCHAR}
+      and expt_seq_nbr = #{exptSeqNbr,jdbcType=VARCHAR}
+      and data_src_abbr = #{dataSrcAbbr,jdbcType=VARCHAR}
+  </update>
+  <select id="queryAll" parameterType="com.ljz.model.DataInterfaceRecords" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from data_interface_records
+    where 1=1 and  data_src_abbr = #{dataSrcAbbr,jdbcType=VARCHAR} order by expt_date desc
+  </select>
+  <select id="queryLastFive" parameterType="com.ljz.model.DataInterfaceRecordsDetail" resultMap="BaseResultMap2">
+    select  * from data_interface_records_detail
+    where 1=1 and  data_src_abbr = #{dataSrcAbbr,jdbcType=VARCHAR} order by expt_seq_nbr desc
+  </select>
+</mapper>
