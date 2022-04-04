@@ -1,7 +1,6 @@
 package com.ljz.model;
 
 import java.io.Serializable;
-import java.util.Date;
 
 public class DataRvsdRecord implements Serializable {
 	

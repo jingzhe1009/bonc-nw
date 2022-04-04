@@ -47,9 +47,10 @@ var compareModel = {
 		})
 	},
 	getData:function (row,data){
+		if(data==null)
+			return '-';
 		console.log(row.red);
 		console.log(data);
-		debugger;
 		var red = row.red;
 		if(red==null||red==''){
 			 return data;
@@ -62,6 +63,7 @@ var compareModel = {
 	setIndexParam:function(idx){
 		var param = {};
 		param.dataSrcAbbr = idx;
+		param.batchNo = localStorage.getItem("batchNo");
 		var json = JSON.stringify(param);
 		console.log(json);
 		$.ajax({
@@ -136,34 +138,47 @@ function initCompareTable(obj) {
 				}else if(data=='1'){
 					return '无变化';
 				}else if(data=='4'){
-					return '<font color="red">缺失</font>';
+					return '<font color="red">删除</font>';
 				}else{
 					return '-';
 				}
             }},
-            {"title": "数据源缩写", "data": "dataSrcAbbr"},
+            {"title": "数据源缩写", "data": "dataSrcAbbr","render":function(data,type,row){
+            	debugger;
+				if(data==null){
+					return '-';
+				}else{
+					return data;
+				}
+            }},
             {"title": "数据接口编号", "data": "dataInterfaceNo","render":function(data,type,row){
 				if(data==null||data==''){
-					return data;
+					return '-';
 				}
 				if(row.flag=='0'){
 					return data;
 				}
 				return compareModel.getData(row,'<a href="#" onclick=compareModel.detail("'+row.dataInterfaceName+'")>'+data+'</a>');
             }},
-            {"title": "数据接口名", "data": "dataInterfaceName"},
+            {"title": "数据接口名", "data": "dataInterfaceName","render":function(data,type,row){
+				if(data==null){
+					return '-';
+				}else{
+					return data;
+				}
+            }},
             {"title": "数据接口描述", "data": "dataInterfaceDesc","render":function(data,type,row){
 				if(data==null||data==''){
-					return data;
+					return '-';
 				}
 				if(row.flag=='0'){
 					return data;
 				}
 				return compareModel.getData(row,data);
             }},
-            {"title": "存储过程", "data": "procName","render":function(data,type,row){
+            /*{"title": "存储过程", "data": "procName","render":function(data,type,row){
 				return compareModel.getData(row,data);
-            }},
+            }},*/
             {"title": "数据加载频率", "data": "dataLoadFreq","render":function(data,type,row){
 				return compareModel.getData(row,data);
             }},

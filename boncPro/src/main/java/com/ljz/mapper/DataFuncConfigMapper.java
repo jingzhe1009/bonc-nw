@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.ljz.model.DataFuncConfig;
-import com.ljz.model.DataFuncRegister;
 
 public interface DataFuncConfigMapper {
     int deleteByPrimaryKey(DataFuncConfig record);

@@ -1,9 +1,7 @@
 package com.ljz.mapper;
 
 import java.util.List;
-import java.util.Map;
 
-import com.ljz.model.*;
 import org.apache.ibatis.annotations.Param;
 
 import com.ljz.model.DataInterface;
@@ -32,7 +30,9 @@ public interface DataInterfaceMapper {
     int batchInsert(List<DataInterfaceTmp> list);
     
     int batchInsertPro(List<DataInterface> list);
-
+    
+    int batchInsertProFromTmp(List<DataInterfaceTmp> list);
+    
     int batchInsertHis(List<DataInterfaceHistory> list);
 
     int tmpToSave(DataInterfaceTmp record);

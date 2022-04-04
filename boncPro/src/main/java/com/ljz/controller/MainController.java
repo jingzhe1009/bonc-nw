@@ -13,8 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -37,7 +35,6 @@ import com.ljz.entity.ParamEntity;
 import com.ljz.model.DataInterface;
 import com.ljz.model.DataInterfaceColumns;
 import com.ljz.model.DataInterfaceColumnsTmp;
-import com.ljz.model.DataInterfaceTmp;
 import com.ljz.model.DataLog;
 import com.ljz.model.DataSrc;
 import com.ljz.model.TbVersion;
@@ -111,39 +108,39 @@ public class MainController {
     public Map<String, Object> queryDataSrcInfo() {
 		logger.info("datasrcInfo query success");
 		
-		List list = new ArrayList();
+		List<Map<String, String>> list = new ArrayList<Map<String, String>>();
 		Map<String, Object> resultMap = new HashMap<String, Object>();
-		Map map = new HashMap();
+		Map<String,String> map = new HashMap<String,String>();
 		map.put("fileName", "data_src.ini");
 		map.put("fileFunc", "配置文件，指定目录扫描及文件预处理所需的配置信息");
 		map.put("fileLocal", "/cdbetl/ETL/TDHOT/CFG");
 		map.put("cmd", "");
 		list.add(map);
-		map = new HashMap<String, Object>();
+		map = new HashMap<String, String>();
 		map.put("fileName", "源数据文件");
 		map.put("fileFunc", "存放各数据源的源数据文件");
 		map.put("fileLocal", "/cdbetl/ETL/TDHOT/DATA/DATASRC");
 		map.put("cmd", "python file_monitor.py");
 		list.add(map);
-		map = new HashMap<String, Object>();
+		map = new HashMap<String, String>();
 		map.put("fileName", "结构化数据文件");
 		map.put("fileFunc", "结构化数据源文件备份");
 		map.put("fileLocal", "/cdbetl/ETL/TDHOT/DATA/BAKUP");
 		map.put("cmd", "python file_monitor.py");
 		list.add(map);
-		map = new HashMap<String, Object>();
+		map = new HashMap<String, String>();
 		map.put("fileName", "非结构化数据文件");
 		map.put("fileFunc", "非结构化数据源文件备份");
 		map.put("fileLocal", "/cdbetl/ETL/TDHOT/DATA/F_BAKUP");
 		map.put("cmd", "python file_monitor.py");
 		list.add(map);
-		map = new HashMap<String, Object>();
+		map = new HashMap<String, String>();
 		map.put("fileName", "目录扫描后的数据文件");
 		map.put("fileFunc", "存放目录扫描后的数据文件");
 		map.put("fileLocal", "/cdbetl/ETL/TDHOT/DATA/PEND");
 		map.put("cmd", "python file_trans.py");
 		list.add(map);
-		map = new HashMap<String, Object>();
+		map = new HashMap<String, String>();
 		map.put("fileName", "文件与处理后的数据文件");
 		map.put("fileFunc", "存放文件与处理后的数据文件");
 		map.put("fileLocal", "/cdbetl/ETL/TDHOT/DATA/QUEUE");
@@ -159,12 +156,12 @@ public class MainController {
 	@ResponseBody
 	@RequestMapping(value="/createDataSrc",method = RequestMethod.POST)
 	@Transactional
-    public Map createDataSrc(DataSrc record) {
+    public Map<String,String> createDataSrc(DataSrc record) {
 		record.setsDate(new java.sql.Date(new Date().getTime()));
 		record.seteDate(ExcelUtil.getInstance().StringToDate("3000-12-31"));
 		String dataSrcAbbr = record.getDataSrcAbbr();
 		List list = dsService.queryDataSrc();
-		Map map = new HashMap();
+		Map<String,String> map = new HashMap<String,String>();
 		for (int i=0;i<list.size();i++){
 			if (dataSrcAbbr.equalsIgnoreCase(list.get(i).toString())){
 				map.put("message","保存失败，数据源"+dataSrcAbbr+"已存在");
@@ -183,10 +180,10 @@ public class MainController {
 	@ResponseBody
 	@RequestMapping(value="/editDataSrc",method = RequestMethod.POST)
 	@Transactional
-    public Map editDataSrc(DataSrc record) {
+    public Map<String,String> editDataSrc(DataSrc record) {
 		String dataSrcAbbr = record.getDataSrcAbbr();
 		List list = dsService.queryDataSrc();
-		Map map = new HashMap();
+		Map<String,String> map = new HashMap<String,String>();
 		for (int i=0;i<list.size();i++){
 			if (dataSrcAbbr.equals(list.get(i))){
 				map.put("message","保存失败，数据源"+dataSrcAbbr+"已存在");
@@ -252,10 +249,10 @@ public class MainController {
 		String [] tables = param.getTables();
 		if(tables==null||tables.length<1)
 			return "字段名不能为空";
-		List<DataInterfaceTmp> tmpList = new ArrayList<DataInterfaceTmp>();
-		List<DataInterface> colList = new ArrayList<DataInterface>();
+//		List<DataInterfaceTmp> tmpList = new ArrayList<DataInterfaceTmp>();
+//		List<DataInterface> colList = new ArrayList<DataInterface>();
 		//创建使用单个线程的线程池
-		ExecutorService es = Executors.newFixedThreadPool(10);
+//		ExecutorService es = Executors.newFixedThreadPool(10);
 		
 		return "导入成功";
 		
@@ -368,7 +365,7 @@ public class MainController {
 		try {
 //			String fileName = filePath.substring(tablePathCfgService.queryExPath().length());
 			response.setCharacterEncoding("UTF-8");
-			response.setHeader("content-Type", "text/html;charset=UTF-8");
+			response.setHeader("content-Type", "application/zip;charset=UTF-8");
 			response.setHeader("Content-Disposition",
 					"attachment;filename=\"" + URLEncoder.encode(fileName, "UTF-8") + "\"");
 			outputStream = response.getOutputStream();

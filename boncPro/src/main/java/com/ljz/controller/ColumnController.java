@@ -7,20 +7,12 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.ljz.mapper.attrC2eMapper;
-import com.ljz.mapper.entityC2eMapper;
-import com.ljz.model.*;
 import com.ljz.service.impl.ExcelServiceImpl;
-import com.ljz.util.ExcelUtil;
-import com.ljz.util.TransUtil;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.slf4j.Logger;

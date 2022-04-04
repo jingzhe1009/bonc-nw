@@ -78,20 +78,24 @@ var infoModel = {
 				processData: false,
 				success: function (result) {
 					//$('#loadAlert').modal('hide');
+					debugger;
 					console.log(result);//打印服务端返回的数据(调试用)
 					localStorage.setItem("batchNo",$("#batchNo").val());
 					localStorage.setItem("dataSrcTmp",result.dataSrcAbbr);
 					zUI.dialog.alert('<pre>' + result.msgData + '</pre>');
-					if(result.msgData.indexOf('成功')){
+					if(result.msgData.indexOf('成功')!=-1){
 						$("#resultText").text('导入成功,请进行下一步');
 					}else{
 						$("#resultText").text('');
+						$("#filename").val('');
 					}
 					
 				},
 				error: function (error) {
 					debugger
 					console.log(error);
+					$("#filename").val('');
+					$("#resultText").text('');
 					zUI.dialog.alert('<pre>异常</pre>');
 				}
 			});

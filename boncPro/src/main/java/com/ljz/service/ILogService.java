@@ -6,8 +6,6 @@ import java.util.List;
 import com.ljz.entity.PageRequest;
 import com.ljz.entity.PageResult;
 import com.ljz.model.DataLog;
-import com.ljz.model.TableList;
-import com.ljz.model.TableListKey;
 
 public interface ILogService {
 

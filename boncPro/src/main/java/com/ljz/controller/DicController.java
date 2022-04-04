@@ -3,7 +3,6 @@ package com.ljz.controller;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,7 +11,6 @@ import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.ljz.model.DataInterface;
 import com.ljz.util.TimeUtil;
 import org.apache.ibatis.annotations.Param;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -125,8 +123,7 @@ public class DicController extends MainController{
 	@ResponseBody
 	@RequestMapping(value="/queryDicTable",method = RequestMethod.GET)
     public Map<String, Object> queryDicTable(entityC2e data,Integer start, Integer length) {
-		entityC2e record = data;
-		List<entityC2e> list = dicService.queryTable(record);
+		List<entityC2e> list = dicService.queryTable(data);
 		Map<String, Object> resultMap = new HashMap<String, Object>();
         resultMap.put("recordsTotal", list.size());
         resultMap.put("recordsFiltered", list.size());

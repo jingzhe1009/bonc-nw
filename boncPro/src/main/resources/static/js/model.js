@@ -7,6 +7,7 @@ var dataModelModel = {
 		$("#checkedAll").prop("checked", false );
 		var obj = {}
 		obj['dataSrcAbbr'] = idx;
+		obj['batchNo'] = localStorage.getItem("batchNo");
 		initDataModelTable(obj);
 		//按条件查询用
 		$("#model_dataSrcAbbr").val(idx);

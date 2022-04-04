@@ -1,7 +1,6 @@
 package com.ljz.model;
 
 import java.io.Serializable;
-import java.time.LocalDate;
 import java.util.Date;
 
 public class DataInterfaceColumnsHistory extends DataInterfaceColumnsHistoryKey implements Serializable {

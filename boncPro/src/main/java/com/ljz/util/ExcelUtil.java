@@ -175,13 +175,17 @@ public class ExcelUtil {
 		//setProcMap(procMap);
 	}
 
-
-	public void put(String dataSrc,Object object) {
-		entityMap.put(dataSrc, object);
+	/**
+	 * key = dataSrcAbbr+batchNo+特定key
+	 * @param key
+	 * @param object
+	 */
+	public void put(String key,Object object) {
+		entityMap.put(key, object);
 	}
 
-	public void clearEntity(String dataSrcAbbr){
-		entityMap.remove(dataSrcAbbr);
+	public void clearEntity(String key){
+		entityMap.remove(key);
 	}
 
 	public void clearInterface(String dataSrcAbbr){

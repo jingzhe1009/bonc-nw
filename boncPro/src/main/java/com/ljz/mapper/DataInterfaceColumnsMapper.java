@@ -25,6 +25,8 @@ public interface DataInterfaceColumnsMapper {
     int batchInsert(List<DataInterfaceColumnsTmp> list);
 
     int batchInsertPro(List<DataInterfaceColumns> list);
+    
+    int batchInsertProFromTmp(List<DataInterfaceColumnsTmp> list);
 
     int batchInsertHis(List<DataInterfaceColumnsHistory> list);
 

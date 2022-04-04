@@ -280,8 +280,6 @@ function changeTab(tabId){
     	$('.base_title').html('当前数据源:'+desc+"("+idx+")");
     	//加载流水表
     	historyModel.init(idx);
-    	//加载流水表最新一条数据
-    	historyModel.setIndexParam(idx);
 	} else if(tabId == '1'){
 		$("#interShowContent").show();
 		showAllInter(idx);
@@ -347,14 +345,8 @@ function showAllInter(idx){
 	});
 }
 function downloadFile(){
-	$.ajax({
-		url:"/model/exportFile",
-		type:"GET",
-		data:{},
-		success: function(result){
-			console.log(result);
-			zUI.dialog.alert('<pre>'+result.msg+'</pre>');
-		}
-	});
+	var dataSrcAbbr=localStorage.getItem("idx");
+	var batchNo=localStorage.getItem("batchNo");
+	location.href = "/model/exportFile?dataSrcAbbr="+dataSrcAbbr+"&batchNo="+batchNo;
 }
 

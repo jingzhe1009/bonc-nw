@@ -5,12 +5,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
@@ -31,7 +29,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.ljz.cache.Cache;
+import com.ljz.cache.CacheManager;
 import com.ljz.constant.BoncConstant;
+import com.ljz.entity.ImportInfo;
 import com.ljz.mapper.DataInterface2procMapper;
 import com.ljz.mapper.DataInterfaceColumnsMapper;
 import com.ljz.mapper.DataInterfaceMapper;
@@ -39,7 +40,6 @@ import com.ljz.mapper.attrC2eMapper;
 import com.ljz.mapper.entityC2eMapper;
 import com.ljz.service.IExcelService;
 import com.ljz.util.ExcelUtil;
-import com.ljz.util.SqlCacheUtil;
 import com.ljz.util.TimeUtil;
 import com.ljz.util.TransUtil;
 
@@ -79,192 +79,7 @@ public class ExcelServiceImpl implements IExcelService{
 	 */
 	@Override
 	@Transactional
-	public Map<String,String> importTable(MultipartFile file,String batchNo){
-		// TODO Auto-generated method stub
-		String ds = "";
-		Map<String,String> map = new HashMap<String,String>();
-		Map<String,String> dupTabMap = new HashMap();
-		Map<String,String> dupCName = new HashMap();
-		List<entityC2e> eList = eMapper.queryAll(new entityC2e());
-		List<attrC2e> aList = aMapper.queryAll(new attrC2e());
-		ExcelUtil obj = ExcelUtil.getInstance();
-		obj.initDTable(eList);
-		obj.initDCol(aList);
-		//excel数据添加到list中
-		List<DataInterfaceTmp> list = new ArrayList<DataInterfaceTmp>();
-		List listDupInTabName = new ArrayList<>();
-		List list2 = new ArrayList<>();
-		List listInfaceName = new ArrayList<>();
-		List listDupInfaceCName = new ArrayList();
-		StringBuffer stringBuffer = new StringBuffer();
-		StringBuffer sbBukNum = new StringBuffer();
-		String string = null;
-		try {
-			Workbook wb = getWorkbook(file);
-			if(wb==null){
-				map.put("msgData", "读取文件失败");
-				map.put("dataSrcAbbr", ds);
-				return map;
-			}
-
-			Sheet sheet = wb.getSheetAt(0);
-			if(sheet == null){
-				map.put("msgData", "读取文件失败");
-				map.put("dataSrcAbbr", ds);
-				return map;
-			}
-
-			int i;
-			for(i=0;i<=sheet.getLastRowNum();i++) {
-				if(i==0)
-					continue;
-				Row row = sheet.getRow(i);
-				String dataSrcAbbr = obj.getCellValue(row.getCell(0));
-				ds = dataSrcAbbr;
-				String dataInfaceNo = obj.getCellValue(row.getCell(1));
-				String dataInfaceName = obj.getCellValue(row.getCell(2));
-				String dataInfaceCName = obj.getCellValue(row.getCell(3));
-				String dataLoadFreq = obj.getCellValue(row.getCell(4));
-				String dataLoadMthd = obj.getCellValue(row.getCell(5));
-				String filedDelim = obj.getCellValue(row.getCell(6));
-				String lineDelim = obj.getCellValue(row.getCell(7));
-				String extrnlDatabaseName = obj.getCellValue(row.getCell(8));
-				String intrnlDatabaseName = obj.getCellValue(row.getCell(9));
-				String extrnlTableName = obj.getCellValue(row.getCell(10));
-				String tableType = obj.getCellValue(row.getCell(12));
-				String bucketNumber = obj.getCellValue(row.getCell(13));
-				String regex2 = "[0-9]+";
-				boolean is3 = bucketNumber.matches(regex2);
-				if(is3==false || bucketNumber.equals("") ){
-					sbBukNum.append("第"+(i+1)+"行[分桶数]应非空且为全数字"+"\n");
-					map.put("msgData", "导入失败\r\n" + sbBukNum);
-					map.put("dataSrcAbbr", ds);
-					return map;
-				}
-				String startDate = obj.getCellValue(row.getCell(14));
-				String endDate = obj.getCellValue(row.getCell(15));
-				String intrnlTableName = obj.getCellValue(row.getCell(11));
-				if("".equals(intrnlTableName)){  //内表表名为空，去词根表找
-					intrnlTableName = TransUtil.transTable(dataInfaceCName,obj.getTableMap());
-					if("".equals(intrnlTableName)){  //词根表查找为空，去词根字段查找
-//						intrnlTableName = obj.getCellValue(row.getCell(11),obj.getColMap(),dataInfaceCName);
-						intrnlTableName = TransUtil.translateField(obj.getColMap(),dataInfaceCName);
-						if (intrnlTableName.equals("")){
-                            intrnlTableName = "";
-                        }else if (!intrnlTableName.startsWith("_")){
-                            intrnlTableName = dataSrcAbbr + "_" + intrnlTableName.toUpperCase();
-                        }else {
-                            intrnlTableName = dataSrcAbbr + intrnlTableName.toUpperCase();
-                        }
-					}
-				}
-				TransUtil.sb=new StringBuffer();
-				StringBuffer temp = new StringBuffer();
-				temp.append(verifyInfaceInfo(dataSrcAbbr,dataInfaceNo,dataInfaceName,dataInfaceCName,
-						dataLoadFreq,dataLoadMthd,filedDelim,lineDelim,extrnlDatabaseName,extrnlTableName,
-						intrnlDatabaseName,intrnlTableName,tableType,bucketNumber));
-				string = temp.toString().trim();
-				if (!string.equals("") && !string.isEmpty() && string!=null){
-					stringBuffer.append("第"+(i+1)+"行:"+"\n");
-					stringBuffer.append(temp.toString());
-//					if (stringBuffer.length() >= 300) {
-//						stringBuffer.append("......"+"\n"+"错误信息过多，请输入正确数据"+"\n");
-//						break;
-//					}
-//					continue;
-				}
-				DataInterfaceTmp model  = new DataInterfaceTmp(batchNo, dataInfaceName, dataInfaceCName, dataLoadFreq,
-						dataLoadMthd, filedDelim, lineDelim, extrnlDatabaseName, intrnlDatabaseName, extrnlTableName,
-						intrnlTableName, tableType, Integer.parseInt(bucketNumber), dataSrcAbbr, dataInfaceNo);
-				model.setsDate(TimeUtil.getTy());
-				model.seteDate(TimeUtil.getE());
-				//logger.info(model.toString());
-				dupTabMap.put(dataInfaceName,intrnlTableName);
-				dupCName.put(dataInfaceName,dataInfaceCName);
-				list.add(model);
-				listDupInTabName.add(model.getIntrnlTableName());
-				list2.add(dataSrcAbbr);
-				listInfaceName.add(model.getDataInterfaceName());
-				listDupInfaceCName.add(model.getDataInterfaceDesc());
-			}
-
-			//接口名重复性校验
-			List<String> infaceName = getDuplicateElements(listInfaceName);
-			for (int j=0;j<infaceName.size();j++) {
-				if (infaceName != null && !infaceName.isEmpty()) {
-					stringBuffer.append("\n"+"[接口名]" + infaceName.get(j) + "有重复");
-				}
-			}
-			//内表表名校验
-			String REGEX_CHINESE = "[\u4e00-\u9fa5]";// 中文正则
-			Pattern p = Pattern.compile(REGEX_CHINESE);
-			for (int j=0;j<listDupInTabName.size();j++) {
-				Matcher m = p.matcher(listDupInTabName.get(j).toString());
-				if (m.find()){
-					stringBuffer.append("第"+(j+2)+"行"+"[内表表名]"+"「"+listDupInTabName.get(j).toString()+"」"+"中文字符在词根找不到映射"+"\n");
-				}
-				if (!listDupInTabName.get(j).toString().startsWith(list2.get(j).toString()) && !listDupInTabName.get(j).toString().equals("")){
-					stringBuffer.append("第"+(j+2)+"行"+"[内表表名]"+"「"+listDupInTabName.get(j).toString()+"」"+"需前缀数据源"+"\n");
-				}else if (!listDupInTabName.get(j).toString().equals("") && listDupInTabName.get(j).toString().endsWith("_TB")  ){
-					stringBuffer.append("第"+(j+2)+"行"+"[内表表名]"+"「"+listDupInTabName.get(j).toString()+"」"+"需前删除后缀'_TB'"+"\n");
-				}else if ("".equals(listDupInTabName.get(j).toString())){
-					stringBuffer.append("第"+(j+2)+"行"+"[内表表名]"+listDupInTabName.get(j).toString()+"不能为空"+"\n");
-				}
-			}
-			//内表表名重复性校验
-			StringBuffer sb = new StringBuffer();
-			List<String> dupInTabList = getDuplicateElements(listDupInTabName);
-			if (dupInTabList != null && !dupInTabList.isEmpty()) {
-				sb.append("以下[接口名]对应的[内表表名]重复:\n");
-				for (int k=0;k<dupInTabList.size();k++) {
-					List dupInfaceName = getKeyList(dupTabMap, dupInTabList.get(k));
-					sb.append("「"+dupInfaceName+"」-「" + dupInTabList.get(k) + "」" + "\n");
-				}
-			}
-			//接口中文名重复性校验
-			List<String> dupInfaceNameL = getDuplicateElements(listDupInfaceCName);
-			if (dupInfaceNameL != null && !dupInfaceNameL.isEmpty()) {
-				sb.append("以下[接口名]对应的[接口中文描述]重复:\n");
-				for (int k=0;k<dupInfaceNameL.size();k++) {
-					List dupInfaceName = getKeyList(dupCName, dupInfaceNameL.get(k));
-//				if (dupInTabList != null && !dupInTabList.isEmpty()) {
-//					sb.append("以下[接口名]对应的[内表表名]重复:\n");
-					sb.append("「"+dupInfaceName+"」-「" + dupInfaceNameL.get(k) + "」" + "\n");
-//				}
-				}
-			}
-
-			if (sb.length()>0) {
-				stringBuffer.append(sb);
-			}
-
-			string = stringBuffer.toString().trim();
-			if (!string.equals("") && !string.isEmpty() && string!=null) {
-				map.put("msgData", "导入失败\r\n"+stringBuffer);
-				map.put("dataSrcAbbr", ds);
-				return map;
-			}
-			int batchInsert = interMapper.batchInsert(list);
-
-			ExcelUtil util = ExcelUtil.getInstance();
-			util.clearInterface(ds);
-			DataInterface data = new DataInterface();
-			data.seteDate(TimeUtil.getTw());
-			data.setDataSrcAbbr(ds);
-			List<DataInterface> listQueryAll = interMapper.queryAll(data);
-			logger.info("listQueryAll:::"+listQueryAll.toString());
-			util.initInterface(interMapper.queryAll(data));
-			map.put("msgData", "校验成功!记录条数:"+batchInsert);
-			map.put("dataSrcAbbr", ds);
-			return map;
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			map.put("msgData", "校验失败");
-			map.put("dataSrcAbbr", ds);
-			return map;
-		}
-	}
+	public Map<String,String> importTable(MultipartFile file,String batchNo){return null;}
 
 
 	/**
@@ -432,171 +247,7 @@ public class ExcelServiceImpl implements IExcelService{
 	 */
 	@Override
 	@Transactional
-	public Map<String,String> importColumn(MultipartFile file,String batchNo) {
-
-		String ds = "";
-		Map<String,String> msgMap = new HashMap<String,String>();
-		List<attrC2e> aList = aMapper.queryAll(new attrC2e());
-		ExcelUtil obj = ExcelUtil.getInstance();
-		obj.initDCol(aList);
-		//excel数据添加到list中
-		List<DataInterfaceColumnsTmp> list = new ArrayList<DataInterfaceColumnsTmp>();
-		StringBuffer stringBuffer = new StringBuffer();
-		String string = null;
-		List<String> listDupFieldName = new ArrayList<>();
-		List list1 = new ArrayList<>();
-		Map<String,List> map = new HashMap<>();
-//		Map<String,String> dupFieldMap = new HashMap();
-		try {
-			Workbook wb = getWorkbook(file);
-			if(wb==null){
-				msgMap.put("msgData", "读取文件失败");
-				msgMap.put("dataSrcAbbr", ds);
-				return msgMap;
-			}
-			Sheet sheet = wb.getSheetAt(0);
-			if(sheet == null){
-				msgMap.put("msgData", "读取文件失败");
-				msgMap.put("dataSrcAbbr", ds);
-				return msgMap;
-			}
-			StringBuffer sbOrderNum = new StringBuffer();
-			for(int i=0;i<=sheet.getLastRowNum();i++) {
-				if(i==0)
-					continue;
-				Row row = sheet.getRow(i);
-				if(row.getCell(0)==null)
-					continue;
-				String dataSrcAbbr = obj.getCellValue(row.getCell(0));
-				String infaceNo = obj.getCellValue(row.getCell(1));
-				String infaceName = obj.getCellValue(row.getCell(2));
-				String orderNumber = obj.getCellValue(row.getCell(3));
-				String regex1 = "[0-9]+";
-				boolean is = orderNumber.matches(regex1);
-				if (!is || orderNumber.equals("")){
-					sbOrderNum.append("第"+(i+1)+"行:[序号]应非空且为数字"+"\n");
-					msgMap.put("msgData", "导入失败\r\n" + sbOrderNum);
-					msgMap.put("dataSrcAbbr", ds);
-					return msgMap;
-				}
-				ds = dataSrcAbbr;
-				String dataType = obj.getCellValue(row.getCell(5));
-				String format = obj.getCellValue(row.getCell(6));
-				String nullable = obj.getCellValue(row.getCell(7));
-				String replacenull = obj.getCellValue(row.getCell(8));
-				String comma = obj.getCellValue(row.getCell(9));
-				String fieldDesc = obj.getCellValue(row.getCell(10));
-				String fieldName = obj.getCellValue(row.getCell(4));
-				if("".equals(fieldName)){  //字段名为空，去词根表找
-						fieldName = obj.getCellValue(row.getCell(4),obj.getColMap(),fieldDesc).toUpperCase();
-						if (fieldName.startsWith("_")){
-							fieldName = fieldName.substring(1).toUpperCase();
-						}
-				}
-				TransUtil.sb = new StringBuffer();
-				String bucketField = obj.getCellValue(row.getCell(11));
-				String iskey = obj.getCellValue(row.getCell(12));
-				String isvalid = obj.getCellValue(row.getCell(13));
-				String incrementfield = obj.getCellValue(row.getCell(14));
-				String startDate = obj.getCellValue(row.getCell(15));
-				String endDate = obj.getCellValue(row.getCell(16));
-				StringBuffer temp = new StringBuffer();
-				temp.append(verifyFieldInfo(dataSrcAbbr,infaceNo,infaceName,orderNumber,fieldName, dataType,
-						format,nullable,comma,fieldDesc,bucketField));
-				string = temp.toString().trim();
-				if (!string.equals("") && !string.isEmpty() && string!=null){
-					stringBuffer.append("第"+(i+1)+"行:"+"\n");
-					stringBuffer.append(temp.toString());
-//					if (stringBuffer.length() >= 300) {
-//						stringBuffer.append("......"+"\n"+"错误信息过多，请输入正确数据"+"\n");
-////						break;
-//						msgMap.put("msgData", "导入失败\r\n" + stringBuffer);
-//						msgMap.put("dataSrcAbbr", ds);
-//						return msgMap;
-//					}
-//					continue;
-				}
-				DataInterfaceColumnsTmp model = new DataInterfaceColumnsTmp(dataSrcAbbr, infaceNo,
-						Integer.parseInt(orderNumber), infaceName, fieldName, dataType, format,
-						 comma, fieldDesc, bucketField, iskey, isvalid, incrementfield);
-				if(nullable!=null && !"".equals(nullable)){
-					model.setNullable(Integer.parseInt(nullable));
-				}else{
-					model.setNullable(0);
-				}
-				if( replacenull!=null && !"".equals(replacenull)){
-					model.setReplacenull(Integer.parseInt(replacenull));
-				}else{
-					model.setReplacenull(0);
-				}
-				/*model.setsDate(new java.sql.Date(new Date().getTime()));*/
-				model.setsDate(TimeUtil.getTy());
-				model.seteDate(TimeUtil.getE());
-				model.setBatchNo(batchNo);
-				list.add(model);
-				list1.add(fieldName);
-				listDupFieldName.add(infaceName+"」-「"+fieldName);
-//				dupFieldMap.put(infaceName+"+"+fieldDesc,fieldName);
-			}
-			//字段名校验
-			String REGEX_CHINESE = "[\u4e00-\u9fa5]";// 中文正则
-			Pattern p = Pattern.compile(REGEX_CHINESE);
-				for (int j=0;j<list1.size();j++) {
-					String str = list1.get(j).toString();
-					Matcher m = p.matcher(str);
-				if (m.find()){
-					stringBuffer.append("第"+(j+2)+"行"+"[字段名]"+"「"+list1.get(j).toString()+"」"+"中文字符在词根找不到映射"+"\n");
-				}else if("".equals(list1.get(j).toString())){
-					stringBuffer.append("第"+(j+2)+"行"+"[字段名]不能为空"+"\n");
-				}
-			}
-			//重复性校验
-			StringBuffer sb = new StringBuffer();
-			List<String> dupFieldNameList = getDuplicateElements(listDupFieldName);
-			if (dupFieldNameList != null && !dupFieldNameList.isEmpty()) {
-				sb.append("\n以下[接口名]对应的[字段名]重复:" + "\n");
-				for (int k=0;k<dupFieldNameList.size();k++) {
-					sb.append("「" + dupFieldNameList.get(k) + "」" + "\n");
-				}
-			}
-
-			if (sb.length()>0) {
-				stringBuffer.append(sb);
-//				return "导入失败\r\n" + stringBuffer;
-			}
-			string = stringBuffer.toString().trim();
-			if (!string.equals("") && !string.isEmpty() && string!=null) {
-				msgMap.put("msgData", "导入失败\r\n" + stringBuffer);
-				msgMap.put("dataSrcAbbr", ds);
-				return msgMap;
-			}
-			//批量入库
-			/*for(DataInterfaceColumns record :list) {
-				colMapper.insertSelective(record);
-				insertVersion(record, "2");
-			}*/
-			//DataInterfaceColumns key = new DataInterfaceColumns();
-			//key.setDataSrcAbbr(ds);
-			//colMapper.deleteByPrimaryKey(key);
-			int batchInsert = colMapper.batchInsert(list);
-			ExcelUtil util = ExcelUtil.getInstance();
-			util.clearColumn(ds);
-			DataInterfaceColumns data = new DataInterfaceColumns();
-			data.seteDate(TimeUtil.getTw());
-			data.setDataSrcAbbr(ds);
-			util.initColumn(colMapper.queryAll(data));
-			msgMap.put("msgData", "校验成功!记录条数:"+batchInsert);
-			msgMap.put("dataSrcAbbr", ds);
-			return msgMap;
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			msgMap.put("msgData", "导入失败");
-			msgMap.put("dataSrcAbbr", ds);
-			return msgMap;
-		}
-		//return "导入成功!记录条数:"+list.size();
-	}
+	public Map<String,String> importColumn(MultipartFile file,String batchNo) {return null;}
 
 	/**
 	 *接口字段信息校验
@@ -705,80 +356,7 @@ public class ExcelServiceImpl implements IExcelService{
 	 */
 	@Override
 	@Transactional
-	public Map<String,String> importProc(MultipartFile file,String batchNo){
-		// TODO Auto-generated method stub
-		String ds = "";
-		Map<String,String> msgMap = new HashMap<String,String>();
-		ExcelUtil obj = ExcelUtil.getInstance();
-		//excel数据添加到list中
-		List<DataInterface2procTmp> list = new ArrayList<DataInterface2procTmp>();
-		try {
-			Workbook wb = getWorkbook(file);
-			if(wb==null){
-				msgMap.put("msgData","读取文件失败");
-				msgMap.put("dataSrcAbbr", ds);
-				return msgMap;
-			}
-			Sheet sheet = wb.getSheetAt(0);
-			if(sheet == null){
-				msgMap.put("msgData","读取文件失败");
-				msgMap.put("dataSrcAbbr", ds);
-				return msgMap;
-			}
-			StringBuffer stringBuffer = new StringBuffer();
-			String string = null;
-			for(int i=0;i<=sheet.getLastRowNum();i++) {
-				if(i==0)
-					continue;
-				Row row = sheet.getRow(i);
-				String dataSrcAbbr = obj.getCellValue(row.getCell(0));
-				String s = null;
-				String dataInterfaceNo = obj.getCellValue(row.getCell(1));
-				ds = dataSrcAbbr;
-				String dbName = obj.getCellValue(row.getCell(2));
-				String procName = obj.getCellValue(row.getCell(3));
-				StringBuffer temp = new StringBuffer();
-				temp.append(verifyLoadProcInfo(dataSrcAbbr,dataInterfaceNo,dbName,procName));
-				string = temp.toString().trim();
-				if (!string.equals("") && !string.isEmpty() && string!=null){
-					stringBuffer.append("第"+(i+1)+"行:"+"\n");
-					stringBuffer.append(temp.toString());
-				}
-				DataInterface2procTmp model = new DataInterface2procTmp();
-				model.setDataSrcAbbr(dataSrcAbbr);
-				model.setDataInterfaceNo(dataInterfaceNo);
-				model.setProcDatabaseName(dbName);
-				model.setProcName(procName);
-				model.setsDate(new java.sql.Date(new Date().getTime()));
-				model.seteDate(ExcelUtil.getInstance().StringToDate(BoncConstant.CON_E_DATE));
-				model.setBatchNo(batchNo);
-				list.add(model);
-			}
-			//批量入库
-			int batchInsert = pMapper.batchInsert(list);
-
-			obj.clearProc(ds);
-			DataInterface2proc data = new DataInterface2proc();
-			data.seteDate(TimeUtil.getTw());
-			data.setDataSrcAbbr(ds);
-			obj.initProc(pMapper.queryAll(data));
-
-			string = stringBuffer.toString().trim();
-			if (!string.equals("") && !string.isEmpty() && string!=null) {
-				msgMap.put("msgData", "校验失败:\n"+stringBuffer);
-			}else {
-				msgMap.put("msgData","校验成功!记录条数:"+batchInsert);
-				msgMap.put("dataSrcAbbr", ds);
-			}
-			return msgMap;
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			msgMap.put("msgData","导入失败");
-			msgMap.put("dataSrcAbbr", ds);
-			return msgMap;
-		}
-	}
+	public Map<String,String> importProc(MultipartFile file,String batchNo){return null;}
 
 
 	/**
@@ -837,8 +415,27 @@ public class ExcelServiceImpl implements IExcelService{
 
 
 
-
-
+	/**
+	 * 根据版本号获取流水号
+	 * @param needVrsnNbr
+	 * @return
+	 */
+	private String getExptSeqNbr(String needVrsnNbr) {
+		String exptSeqNbr = "";
+		List<Map<String,Object>> dirList =jdbc.queryForList(" select need_vrsn_nbr,expt_seq_nbr from data_interface_records order by expt_date desc ");
+		for(int j=0;j<dirList.size();j++) {
+			if(j==0) {
+				Map<String,Object> m =dirList.get(j);
+				if(m.get("need_vrsn_nbr").equals(needVrsnNbr)) {
+					exptSeqNbr = getNewId((String) m.get("expt_seq_nbr"));
+				}
+			}
+		}
+		if(exptSeqNbr==null||"".equals(exptSeqNbr)) {
+			exptSeqNbr=needVrsnNbr+".1";
+		}
+		return exptSeqNbr;
+	}
 
 	/**
 	 * 当前数据治理版本2的导入功能，导入接口，字段，数据加载算法
@@ -861,6 +458,7 @@ public class ExcelServiceImpl implements IExcelService{
 		List<DataInterfaceColumnsTmp> listColumn = new ArrayList<DataInterfaceColumnsTmp>();
 		List<DataInterface2procTmp> listProc = new ArrayList<DataInterface2procTmp>();
 		ExcelUtil objInface = ExcelUtil.getInstance();
+		objInface.clearEntity(ds+batchNo);
 		try {
 			Workbook wb = getWorkbook(file);
 			if (wb == null) {
@@ -875,8 +473,8 @@ public class ExcelServiceImpl implements IExcelService{
 			if (sheet2 != null && sheet2.getLastRowNum() != 0) {
 	//			String ds = "";
 	//			Map<String, String> mapInface = new HashMap<String, String>();
-				Map<String, String> dupTabMap = new HashMap();
-				Map<String, String> dupCName = new HashMap();
+				Map<String, String> dupTabMap = new HashMap<String, String>();
+				Map<String, String> dupCName = new HashMap<String, String>();
 				List<entityC2e> eList = eMapper.queryAll(new entityC2e());
 				List<attrC2e> aList = aMapper.queryAll(new attrC2e());
 				objInface.initDTable(eList);
@@ -896,9 +494,9 @@ public class ExcelServiceImpl implements IExcelService{
 						continue;
 					Row row = sheet2.getRow(i);
 					String dataSrcAbbr = objInface.getCellValue(row.getCell(0));
-					String a = null;
+//					String a = null;
 					if (!ds.equals("") && !ds.equals(dataSrcAbbr)){
-						a = "[数据源]不一致,请校验\n";
+//						a = "[数据源]不一致,请校验\n";
 						checkDs=false;
 						break;
 					}
@@ -943,15 +541,9 @@ public class ExcelServiceImpl implements IExcelService{
 					TransUtil.sb = new StringBuffer();
 					StringBuffer temp = new StringBuffer();
 //					System.out.println("a:::"+a);
-					if (a!=null) {
-						temp.append(a+verifyInfaceInfo(dataSrcAbbr, dataInfaceNo, dataInfaceName, dataInfaceCName,
-								dataLoadFreq, dataLoadMthd, filedDelim, lineDelim, extrnlDatabaseName, extrnlTableName,
-								intrnlDatabaseName, intrnlTableName, tableType, bucketNumber));
-					}else {
-						temp.append(verifyInfaceInfo(dataSrcAbbr, dataInfaceNo, dataInfaceName, dataInfaceCName,
-								dataLoadFreq, dataLoadMthd, filedDelim, lineDelim, extrnlDatabaseName, extrnlTableName,
-								intrnlDatabaseName, intrnlTableName, tableType, bucketNumber));
-					}
+					temp.append(verifyInfaceInfo(dataSrcAbbr, dataInfaceNo, dataInfaceName, dataInfaceCName,
+							dataLoadFreq, dataLoadMthd, filedDelim, lineDelim, extrnlDatabaseName, extrnlTableName,
+							intrnlDatabaseName, intrnlTableName, tableType, bucketNumber));
 					string = temp.toString().trim();
 					if (!string.equals("") && !string.isEmpty() && string != null) {
 						bufferInface.append("第" + (i + 1) + "行:" + "\n");
@@ -1032,15 +624,6 @@ public class ExcelServiceImpl implements IExcelService{
 					mapInface.put("dataSrcAbbr", ds);
 //					return mapInface;
 				}
-//				batchInsertInface = interMapper.batchInsert(list);
-//				ExcelUtil util = ExcelUtil.getInstance();
-//				util.clearInterface(ds);
-//				DataInterface data = new DataInterface();
-//				data.seteDate(TimeUtil.getTw());
-//				data.setDataSrcAbbr(ds);
-//				util.initInterface(interMapper.queryAll(data));
-//				mapInface.put("msgData", "接口信息校验成功!记录条数:" + batchInsert+"\n");
-//				mapInface.put("dataSrcAbbr", ds);
 			}else {
 				mapInface.put("msgData", "数据接口信息表不能为空\r\n");
 			}
@@ -1213,17 +796,6 @@ public class ExcelServiceImpl implements IExcelService{
 					mapColumn.put("dataSrcAbbr", ds);
 //					return mapColumn;
 				}
-					//批量入库
-//					batchInsertColumn = colMapper.batchInsert(listColumn);
-//					ExcelUtil util = ExcelUtil.getInstance();
-//					util.clearColumn(ds);
-//					DataInterfaceColumns data = new DataInterfaceColumns();
-//					data.seteDate(TimeUtil.getTw());
-//					data.setDataSrcAbbr(ds);
-//					util.initColumn(colMapper.queryAll(data));
-//					mapColumn.put("msgData", "接口字段信息校验成功!记录条数:" + batchInsertColumn + "\n");
-//					mapColumn.put("dataSrcAbbr", ds);
-//				return mapColumn;
 
 			}else {
 				mapColumn.put("msgData", "数据接口字段表不能为空\r\n");
@@ -1245,7 +817,7 @@ public class ExcelServiceImpl implements IExcelService{
 						continue;
 					Row row = sheet4.getRow(i);
 					String dataSrcAbbr = objProc.getCellValue(row.getCell(0));
-					String s = null;
+//					String s = null;
 					String dataInterfaceNo = objProc.getCellValue(row.getCell(1));
 					ds = dataSrcAbbr;
 					String dbName = objProc.getCellValue(row.getCell(2));
@@ -1271,16 +843,6 @@ public class ExcelServiceImpl implements IExcelService{
 				if (!string.equals("") && !string.isEmpty() && string!=null) {
 					mapProc.put("msgData", "数据加载算法校验失败:\n"+bufferProc);
 				}
-				//批量入库
-//				batchInsertProc = pMapper.batchInsert(list);
-//				objProc.clearProc(ds);
-//				DataInterface2proc data = new DataInterface2proc();
-//				data.seteDate(TimeUtil.getTw());
-//				data.setDataSrcAbbr(ds);
-//				objProc.initProc(pMapper.queryAll(data));
-//				mapProc.put("msgData","数据加载算法校验成功!记录条数:"+batchInsert);
-//				mapProc.put("dataSrcAbbr", ds);
-//				return mapProc;
 			}else {
 				mapColumn.put("msgData", "数据加载算法表不能为空\r\n");
 			}
@@ -1288,70 +850,51 @@ public class ExcelServiceImpl implements IExcelService{
 
 			if (mapRecord.get("msgData") == null && mapInface.get("msgData") == null && mapColumn.get("msgData") == null && mapProc.get("msgData") == null ){
 				try {
+					//获取缓存
 					ExcelUtil util = ExcelUtil.getInstance();
-					//sheet1批量入库临时表
-					int recordCount =0;
-					for(int i=0;i<listRecord.size();i++) {
-						if(i!=0)
-							continue;
-						DataRvsdRecordTmp recordTmp = listRecord.get(i);
-						
-						String needVrsnNbr = recordTmp.getNeedVrsnNbr();
-						String exptSeqNbr = "";
-						List<Map<String,Object>> dirList =jdbc.queryForList(" select need_vrsn_nbr,expt_seq_nbr from data_interface_records order by expt_date desc ");
-						for(int j=0;j<dirList.size();j++) {
-							if(j==0) {
-								Map<String,Object> m =dirList.get(j);
-								if(m.get("need_vrsn_nbr").equals(needVrsnNbr)) {
-									exptSeqNbr = getNewId((String) m.get("expt_seq_nbr"));
-								}
-							}
-						}
-						if(exptSeqNbr==null||"".equals(exptSeqNbr)) {
-							exptSeqNbr=needVrsnNbr+".1";
-						}
-						recordTmp.setExptSeqNbr(exptSeqNbr);
-						//batchInsertRecord = recordMapper.batchInsert(recordTmp);
-						util.put(ds+"DataRvsdRecordTmp",recordTmp);
-						recordCount++;
+					Map<String,Object> cache = util.getEntityMap();
+					ImportInfo info = (ImportInfo) cache.get(ds+batchNo);
+					if(info==null) {
+						info = new ImportInfo();
 					}
-					mapRecord.put("msgData", "接口修订记录校验成功!记录条数:" + recordCount + "\n");
-//					batchInsertRecord = recordMapper.batchInsert(listRecord);
-//					mapRecord.put("msgData", "接口修订记录校验成功!记录条数:" + batchInsertRecord + "\n");
+					//sheet1批量入库临时表
+					if(listRecord.size()<1) {
+						msgMap.put("msgData", "修订记录不能为空");
+						msgMap.put("dataSrcAbbr", ds);
+						return msgMap;
+					}
+					DataRvsdRecordTmp recordTmp = listRecord.get(0);
+					String needVrsnNbr = recordTmp.getNeedVrsnNbr();
+					String exptSeqNbr = getExptSeqNbr(needVrsnNbr);
+					recordTmp.setExptSeqNbr(exptSeqNbr);
+					info.setDataRvsdRecordTmp(recordTmp);
+					mapRecord.put("msgData", "接口修订记录校验成功!记录条数:1\n");
 					mapRecord.put("dataSrcAbbr", ds);
 
 					//sheet2批量入库临时表
 					//batchInsertInface = interMapper.batchInsert(listInface);
-					util.getEntityMap().put(ds+"DataInterfaceTmp", listInface);
-					util.clearInterface(ds);
-					DataInterface data = new DataInterface();
-					data.seteDate(TimeUtil.getTw());
-					data.setDataSrcAbbr(ds);
-					//util.initInterface(interMapper.queryAll(data));
-					mapInface.put("msgData", "接口信息校验成功!记录条数:" + batchInsertInface + "\n");
+					//util.getEntityMap().put(ds+batchNo+"DataInterfaceTmp", listInface);
+					info.setDataInterfaceTmpList(listInface);
+					mapInface.put("msgData", "接口信息校验成功!记录条数:" + listInface.size() + "\n");
 					mapInface.put("dataSrcAbbr", ds);
 
 					//sheet3批量入库
 					//batchInsertColumn = colMapper.batchInsert(listColumn);
-					util.getEntityMap().put(ds+"DataInterfaceColumnsTmp", listColumn);
-					util.clearColumn(ds);
-					DataInterfaceColumns dataColumn = new DataInterfaceColumns();
-					dataColumn.seteDate(TimeUtil.getTw());
-					dataColumn.setDataSrcAbbr(ds);
-					//util.initColumn(colMapper.queryAll(dataColumn));
-					mapColumn.put("msgData", "接口字段信息校验成功!记录条数:" + batchInsertColumn + "\n");
+					//util.getEntityMap().put(ds+batchNo+"DataInterfaceColumnsTmp", listColumn);
+					info.setDataInterfaceColumnsTmpList(listColumn);
+					mapColumn.put("msgData", "接口字段信息校验成功!记录条数:" + listColumn.size() + "\n");
 					mapColumn.put("dataSrcAbbr", ds);
 
 					//sheet4批量入库
 					//batchInsertProc = pMapper.batchInsert(listProc);
-					util.getEntityMap().put(ds+"DataInterface2procTmp", listProc);
-					util.clearProc(ds);
-					DataInterface2proc dataProc = new DataInterface2proc();
-					dataProc.seteDate(TimeUtil.getTw());
-					dataProc.setDataSrcAbbr(ds);
-					//util.initProc(pMapper.queryAll(dataProc));
-					mapProc.put("msgData", "数据加载算法校验成功!记录条数:" + batchInsertProc);
+					//util.getEntityMap().put(ds+batchNo+"DataInterface2procTmp", listProc);
+					info.setDataInterface2procTmpList(listProc);
+					mapProc.put("msgData", "数据加载算法校验成功!记录条数:" + listProc.size());
 					mapProc.put("dataSrcAbbr", ds);
+					//存入缓存
+					info.setDataSrcAbbr(ds);
+					info.setBatchNo(batchNo);
+					cache.put(ds+batchNo,info);
 				}catch (Exception e){
 					e.printStackTrace();
 					msgMap.put("msgData", "校验完成，导入异常");
@@ -1366,7 +909,10 @@ public class ExcelServiceImpl implements IExcelService{
 			return msgMap;
 		}
 
-		msgMap.put("msgData",mapRecord.get("msgData")+mapInface.get("msgData")+mapColumn.get("msgData")+mapProc.get("msgData"));
+		msgMap.put("msgData",(mapRecord.get("msgData")==null?"":mapRecord.get("msgData"))
+				+(mapInface.get("msgData")==null?"":mapInface.get("msgData"))
+				+(mapColumn.get("msgData")==null?"":mapColumn.get("msgData"))
+				+(mapProc.get("msgData")==null?"":mapProc.get("msgData")));
 		msgMap.put("dataSrcAbbr", ds);
 		msgMap.put("fileName", file.getOriginalFilename());
 		return msgMap;
@@ -1412,7 +958,7 @@ public class ExcelServiceImpl implements IExcelService{
 			if(null != sheet){
 				//校验
 //				List<String> tmpList = new ArrayList<>();
-				List<String> enameList = new ArrayList<>();
+//				List<String> enameList = new ArrayList<>();
 				StringBuffer stringBuffer = new StringBuffer();
 				for(int i=0;i<=sheet.getLastRowNum();i++) {
 					if(i==0)

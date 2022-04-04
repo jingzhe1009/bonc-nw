@@ -33,12 +33,14 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.alibaba.fastjson.JSON;
+import com.ljz.entity.ImportInfo;
 import com.ljz.entity.ParamEntity;
 import com.ljz.model.DataInterface2proc;
 import com.ljz.model.DataInterface2procTmp;
 import com.ljz.model.DataInterfaceTmp;
 import com.ljz.model.Order;
 import com.ljz.service.IDataInterfaceService;
+import com.ljz.util.CompressUtil;
 import com.ljz.util.ExcelUtil;
 import com.ljz.util.InsertDbProduceReturn;
 import com.ljz.util.TestProduceReturn;
@@ -374,18 +376,15 @@ public class ModelController extends MainController{
 		}
 	}
 
-	String DDLFilePath = null;
-	String DMLFilePath = null;
-	String dataSrc = null;
-	String rollBackFilePath = null;
+
 	@RequestMapping("/createFile")
 	@ResponseBody
 	public Map<String,String> createFile(@RequestBody(required=false) ParamEntity param) throws Exception{
 		long start = new Date().getTime();
-		String tmpTable[] = param.getTables();
+//		String tmpTable[] = param.getTables();
 		Map<String,String> map = new HashMap<String,String>();
-		String num ="";
-		String tb ="";
+//		String num ="";
+//		String tb ="";
 		ExcelUtil obj = ExcelUtil.getInstance();
 		@SuppressWarnings("unchecked")
 		List<DataInterfaceTmp> addList =(List<DataInterfaceTmp>) obj.getEntityMap().get(param.getBatchNo());
@@ -398,9 +397,8 @@ public class ModelController extends MainController{
 			dataSrc=tmp.getDataSrcAbbr();
 		}
 		map = intService.createFile(list, param);
-		DDLFilePath = map.get("filePath");
-        DMLFilePath = map.get("DMLFilePath");
-        rollBackFilePath = dataInterfaceService.createRollBackFile(dataSrc);//生成回滚sql文件
+		
+        dataInterfaceService.createRollBackFile(dataSrc,param.getBatchNo());//生成回滚sql文件
 
         dataSrc = map.get("idx");
 		long end = new Date().getTime();
@@ -431,11 +429,9 @@ public class ModelController extends MainController{
 			list.add(tb);
 		}
 		map = intService.createFile(list, param);
-		DDLFilePath = map.get("filePath");
-        DMLFilePath = map.get("DMLFilePath");
-        rollBackFilePath = dataInterfaceService.createRollBackFile(dataSrc);//生成回滚sql文件
+		
+        dataInterfaceService.createRollBackFile(param.getDataSrcAbbr(),param.getBatchNo());//生成回滚sql文件
 
-        dataSrc = map.get("idx");
 		long end = new Date().getTime();
 		logger.info("生成建表语句文件用时:"+(end-start)+"毫秒");
 		return map;
@@ -443,12 +439,18 @@ public class ModelController extends MainController{
 
 	//文件下载
 	@RequestMapping(value="/exportFile")
-	@ResponseBody
-	public Map<String,String> exportFile(HttpServletResponse response) {
+	public void exportFile(HttpServletResponse response,HttpServletRequest request) {
+		String dataSrcAbbr = request.getParameter("dataSrcAbbr");
+		String batchNo = request.getParameter("batchNo");
+		ExcelUtil obj =ExcelUtil.getInstance();
+		Map<String,Object> cache=obj.getEntityMap();
+		ImportInfo info = (ImportInfo) cache.get(dataSrcAbbr+batchNo);
+		String DDLFilePath = info.getDMLInsertPath();
+		String DMLFilePath = info.getDMLFilePath();
 		Map<String,String> map = new HashMap<String,String>();
 		StringBuffer stringBuffer = new StringBuffer();
 //		String rollBackFilePath = dataInterfaceService.createRollBackFile(dataSrc);//生成回滚sql文件
-		try {
+//		try {
 			if(DDLFilePath == null || !new File(DDLFilePath).exists()){
 				logger.info("DDL文件不存在");
 				stringBuffer.append("DDL文件不存在");
@@ -477,20 +479,42 @@ public class ModelController extends MainController{
 
 			logger.info("DDLFileName:::"+fileNameDDL+"\nfileNameDML:::"+fileNameDML+"\nfileNameRollBack:::"+fileNameRollBack);
 //			filePath = "/Users/lgd/Documents/en/" + fileName;
-			downLoadSql(DDLFilePath, fileNameDDL,response);
+			String filePath = config.getFilePath()+dataSrcAbbr+batchNo+"/";
+			String fileName = "compress";
+			String ext = "zip";
+			File file = new File(filePath);
+			//是否压缩
+			boolean isZip = false;
+			if(file.exists()) {
+				File [] fs =file.listFiles();
+				for(File f:fs) {
+					if(!f.getName().endsWith(".zip")&&!f.getName().endsWith(".tar")) {
+						isZip = true;
+					}
+				}
+			}
+			if(isZip) {
+				try {
+					CompressUtil.generateFile(filePath,file.getParent()+"/",fileName, ext);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			
+			downLoadSql(config.getFilePath()+"/"+fileName+"."+ext, fileName+"."+ext,response);
 //			downLoadSql(infoImportService.DMLFilePath,fileNameDML,response);
 //			downLoadSql(rollBackFilePath,fileNameRollBack,response);
 
-		} catch (Exception e) {
+		/*} catch (Exception e) {
 			map.put("code", "1111");
 			map.put("msg", stringBuffer.toString());
 			e.printStackTrace();
 		}finally {
 			map.put("code", "0000");
 			map.put("msg", "成功");
-		}
+		}*/
 		
-		return map;
 	}
 
 	@RequestMapping("/insertDb")
@@ -499,15 +523,11 @@ public class ModelController extends MainController{
 		long start = new Date().getTime();
 		Map<String,String> map = new HashMap<String,String>();
 		ExcelUtil obj = ExcelUtil.getInstance();
-		@SuppressWarnings("unchecked")
-		List<DataInterfaceTmp> addList =(List<DataInterfaceTmp>) obj.getEntityMap().get(param.getBatchNo());
+		Map<String,Object> cache=obj.getEntityMap();
+		ImportInfo info = (ImportInfo) cache.get(param.getDataSrcAbbr()+param.getBatchNo());
 		
-		List<String> list = new ArrayList<String>();
-		for(DataInterfaceTmp tmp:addList) {
-			String dataInterfaceName = tmp.getDataInterfaceName();
-			list.add(dataInterfaceName);
-		}
-		List<String> hasList = new ArrayList<String>();
+		List<String> list = info.getNeedFileList();
+		List<String> hasList = info.getNeedCreateList();
 		
 		logger.info("需要物化的表:"+list);
 		map = intService.insertDb(list,hasList, param);
@@ -517,51 +537,7 @@ public class ModelController extends MainController{
 	}
 	@RequestMapping("/insertDbOld")
 	@ResponseBody
-	public Map<String,String> insertDbOld(@RequestBody(required=false) ParamEntity param) throws Exception{
-		long start = new Date().getTime();
-		Map<String,String> map = new HashMap<String,String>();
-        String tmpTable[] = param.getTables();
-//        for (int i=0;i<tmpTable.length;i++) {
-//			System.out.println("tmpTable[]:::" + tmpTable[i]);
-//		}
-		List<String> list = new ArrayList<String>();
-		List<String> hasList = new ArrayList<String>();
-		String tb ="";
-		String num = "";
-		for(int i=0;i<tmpTable.length;i++){
-			if(tmpTable[i].equals("checkedAll"))
-				continue;
-			if(!tmpTable[i].contains("-"))
-				continue;
-			logger.info("执行接口:"+tmpTable[i]);
-			String[] split = tmpTable[i].split("-");
-			tb = split[0];
-			String state = split[1];
-			num = split[2];
-			if(num==null||"null".equals(num)||"".equals(num))
-				break;
-			if(!state.contains("未")){
-				hasList.add(tb);
-			}else{
-				list.add(tb);
-			}
-		}
-		if(num==null||"null".equals(num)||"".equals(num)){
-			map.put("msgCode", "1111");
-			map.put("msgData", "接口"+tb+"没有配置字段");
-			return map;
-		}
-		if(list.size()<1){
-			map.put("msgCode", "1111");
-			map.put("msgData", "选中的接口都已建表,已存在表为："+hasList.toString());
-			return map;
-		}
-		logger.info("需要物化的表:"+list);
-		map = intService.insertDb(list,hasList, param);
-		long end = new Date().getTime();
-		logger.info("建模入库用时:"+(end-start)+"毫秒");
-		return map;
-	}
+	public Map<String,String> insertDbOld(@RequestBody(required=false) ParamEntity param) throws Exception{return null;}
 //
 //	/*@RequestMapping("/createFile")
 //	@ResponseBody

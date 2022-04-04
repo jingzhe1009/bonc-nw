@@ -2,16 +2,13 @@ package com.ljz.service.impl;
 
 import java.util.List;
 
-import org.apache.ibatis.annotations.Mapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.ljz.mapper.attrC2eMapper;
 import com.ljz.mapper.entityC2eMapper;
 import com.ljz.model.attrC2e;
-import com.ljz.model.attrC2eKey;
 import com.ljz.model.entityC2e;
-import com.ljz.model.entityC2eKey;
 import com.ljz.service.IDictionaryService;
 
 @Service

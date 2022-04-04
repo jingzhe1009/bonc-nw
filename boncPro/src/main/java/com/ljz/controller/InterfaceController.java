@@ -40,6 +40,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.ljz.entity.ImportInfo;
 import com.ljz.entity.ParamEntity;
 import com.ljz.service.IDataInterfaceService;
 import com.ljz.util.TimeUtil;
@@ -151,12 +152,15 @@ public class InterfaceController extends MainController{
     public Map<String, Object> queryCurrentNum(@RequestBody(required=false) ParamEntity param) {
 		
 		String dataSrcAbbr = param.getDataSrcAbbr();
+		String batchNo = param.getBatchNo();
 		ExcelUtil util = ExcelUtil.getInstance();
-		int intUpdateNum=(int) util.getEntityMap().get(dataSrcAbbr+"intUpdateNum");
-		int intInsertNum=(int) util.getEntityMap().get(dataSrcAbbr+"intInsertNum");
-		int colUpdateNum=(int) util.getEntityMap().get(dataSrcAbbr+"colUpdateNum");
-		int colInsertNum=(int) util.getEntityMap().get(dataSrcAbbr+"colInsertNum");
-		DataRvsdRecordTmp tmp=(DataRvsdRecordTmp) util.getEntityMap().get(dataSrcAbbr+"DataRvsdRecordTmp");
+		Map<String,Object> cache=util.getEntityMap();
+		ImportInfo info = (ImportInfo) cache.get(dataSrcAbbr+batchNo);
+		int intUpdateNum=info.getIntUpdateNum();
+		int intInsertNum=info.getIntInsertNum();
+		int colUpdateNum=info.getColUpdateNum();
+		int colInsertNum=info.getColInsertNum();
+		DataRvsdRecordTmp tmp=info.getDataRvsdRecordTmp();
 		Map<String, Object> resultMap = new HashMap<String, Object>();
 		resultMap.put("state", "success");
 		resultMap.put("tmp", tmp.getIntfDscr());
@@ -522,13 +526,12 @@ public class InterfaceController extends MainController{
 
 	@ResponseBody
 	@RequestMapping(value="/queryModel",method = RequestMethod.GET)
-    public Map<String, Object> queryModel(String dataSrcAbbr,String dataInterfaceNo,Integer start, Integer length) {
+    public Map<String, Object> queryModel(String dataSrcAbbr,String batchNo) {
 		DataInterface record = new DataInterface();
 		record.setDataSrcAbbr(dataSrcAbbr);
-		record.setDataInterfaceNo(dataInterfaceNo);
 		record.seteDate(TimeUtil.getTw());
 		logger.info(record.toString());
-		List<DataInterface> list = intService.queryModel(record);
+		List<DataInterface> list = intService.queryModel(dataSrcAbbr,batchNo,record);
 		Map<String, Object> resultMap = new HashMap<String, Object>();
         resultMap.put("recordsTotal", list.size());
         resultMap.put("recordsFiltered", list.size());

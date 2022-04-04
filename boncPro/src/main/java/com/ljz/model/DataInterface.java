@@ -7,9 +7,7 @@ public class DataInterface  implements Serializable {
 	
 	private static final long serialVersionUID = 1L;
 	
-	private String needVrsnNbr;
 	
-	private String expt_seq_nbr;
 	 
 	private String dataSrcAbbr;
 

@@ -39,7 +39,7 @@ public interface IDataInterfaceService {
     
     int updateBatch(List<DataInterface> list);
     
-    List<DataInterface> queryModel(DataInterface record);
+    List<DataInterface> queryModel(String dataSrcAbbr,String batchNo,DataInterface record);
     
     Map<String,String> createFile(List<String> list,ParamEntity param) throws Exception;
     

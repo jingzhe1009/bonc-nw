@@ -6,7 +6,6 @@ import com.ljz.entity.ParamEntity;
 import com.ljz.model.DataInterfaceColumns;
 import com.ljz.model.DataInterfaceColumnsHistory;
 import com.ljz.model.DataInterfaceColumnsTmp;
-import com.ljz.model.DataInterfaceHistory;
 
 public interface IDataColumnService {
 

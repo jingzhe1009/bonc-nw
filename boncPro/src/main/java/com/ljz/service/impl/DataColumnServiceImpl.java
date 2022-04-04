@@ -6,12 +6,14 @@ import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ljz.entity.ImportInfo;
 import com.ljz.entity.ParamEntity;
 import com.ljz.mapper.DataInterfaceColumnsHistoryMapper;
 import com.ljz.mapper.DataInterfaceColumnsMapper;
@@ -52,88 +54,93 @@ public class DataColumnServiceImpl implements IDataColumnService{
 		return mapper.queryAll(record);
 	}
 
+	
 	@Override
 	public List<DataInterfaceColumnsHistory> queryColumnCompare(DataInterfaceColumnsHistory record) {
-		List<Map<String, Object>> colHistoryList = jdbc.queryForList("select * from  data_interface_columns where e_date = '3000-12-31' and data_interface_name='"+record.getDataInterfaceName()+"'");
-
-		for (int i=0;i<colHistoryList.size();i++){
-			logger.info("colHistoryList:::"+colHistoryList.toString());
-		}
-
-		if(colHistoryList.size()<1) {//第一次导入历史表
-			return hisMapper.queryFirst(record);
-		}
-		List<DataInterfaceColumnsHistory> historyList = hisMapper.queryAll(record);
+		String dataSrcAbbr = record.getDataSrcAbbr();
+		String batchNo = record.getExptSeqNbr();
+		ExcelUtil obj =ExcelUtil.getInstance();
+		Map<String,Object> cache=obj.getEntityMap();
+		ImportInfo info = (ImportInfo) cache.get(dataSrcAbbr+batchNo);
+		
+		//Map<String,Object> msgMap = new HashMap<String,Object>();
 		List<DataInterfaceColumnsHistory> resultList = new ArrayList<DataInterfaceColumnsHistory>();
-		ExcelUtil obj = ExcelUtil.getInstance();
+		List<DataInterfaceColumnsTmp> queryAllTmp =info.getDataInterfaceColumnsTmpList();
+		DataInterfaceColumns data = new DataInterfaceColumns();
+		data.seteDate(TimeUtil.getTw());
+		data.setDataSrcAbbr(record.getDataSrcAbbr());
+		data.setDataInterfaceName(record.getDataInterfaceName());
+		List<DataInterfaceColumns> queryAll = mapper.queryAll(data);
+		int addcount=0;
 		try {
-			DataInterfaceColumnsHistory tmp = null;
-			for(DataInterfaceColumnsHistory data:historyList) {
-				String red = "";
-				if("0".equals(data.getFlag())) {
-					tmp = data;
-				}else if("1".equals(data.getFlag())) {
-					if(tmp!=null&&!data.getDataInterfaceName().equals(tmp.getDataInterfaceName())) {
-						tmp.setFlag("0");
-						resultList.add(tmp);
-						DataInterfaceColumnsHistory del =new DataInterfaceColumnsHistory();
-						del.setFlag("4");
-						resultList.add(del);//删除
-					}
-					Map<String,String> columnMap =obj.getColumnMap(data.getDataSrcAbbr());
-					String colKey = data.getDataInterfaceName()+data.getColumnNo();
-					if(columnMap!=null&&columnMap.containsKey(colKey)){
-						if(data.toStr().equalsIgnoreCase(columnMap.get(colKey))){//无变化
+			for(DataInterfaceColumnsTmp tmp : queryAllTmp) {
+				if(!record.getDataInterfaceName().equals(tmp.getDataInterfaceName()))
+					continue;
+				String red = "";//是否标红
+				boolean isAdd = true;
+				for(DataInterfaceColumns pro:queryAll) {
+					if(tmp.getColumnNo().equals(pro.getColumnNo())) {
+						isAdd = false;
+						if(tmp.toStr().equals(pro.toStr())) {//无变化
 							
-						}else{//修改
-	                		data.setFlag("2");//修改
+						}else {
 	                		//对比
-							//临时表的所有字段
-					        Field[] fields = data.getClass().getDeclaredFields();  
+					        Field[] fields = tmp.getClass().getDeclaredFields(); 
+					        Field[] fields2 = pro.getClass().getDeclaredFields(); 
+					        //临时表的所有字段
 					        for(int i=0; i<fields.length; i++){ 
 					            Field f = fields[i];  
 					            f.setAccessible(true);  
 					            String tmpKey=f.getName();
-					            String tmpValue=f.get(data)+"";
-					            System.out.println("属性名:" + tmpKey + " 属性值:" + tmpValue);  
-					            if("red".equals(tmpKey)||"flag".equals(tmpKey)||"serialVersionUID".equals(tmpValue))
+					            String tmpValue=f.get(tmp)+"";
+					            //System.out.println("属性名:" + tmpKey + " 属性值:" + tmpValue);  
+					            if("serialVersionUID".equals(f.getName())||"sDate".equals(f.getName())||"eDate".equals(f.getName()))
 				                	continue;
 					            if(tmpKey==null||tmpValue==null)
 					            	continue;
 					            //正式表的所有字段
-					            Field[] fields2 = tmp.getClass().getDeclaredFields();  
 					            for(int j=0; j<fields2.length; j++){  
 					                Field f2 = fields2[j];  
 					                f2.setAccessible(true); 
 					                String proKey = f2.getName();
-					                String proValue = f2.get(tmp)+"";
+					                String proValue = f2.get(pro)+"";
 					                //System.out.println("tmp属性名:" + proKey + " tmp属性值:" + proValue); 
 					                if(proKey==null||proValue==null)
 					                	continue;
 					                if(tmpKey.equals(proKey)) {
 					                	if(!tmpValue.equals(proValue)) {
 					                		red +="'"+tmpValue+"',";
-					                		data.setFlag("2");
 					                	}
 					                }
 					            }
 					        }
+					        DataInterfaceColumnsHistory history = new DataInterfaceColumnsHistory();
+							BeanUtils.copyProperties(pro, history);
+							history.setFlag("0");
+							history.setRed("");
+							resultList.add(history);
+							DataInterfaceColumnsHistory history2 = new DataInterfaceColumnsHistory();
+							BeanUtils.copyProperties(tmp, history2);
+							history2.setFlag("2");
+							history2.setRed(red);
+							resultList.add(history2);
 						}
-					}else{//新增
-                		DataInterfaceColumnsHistory add = new DataInterfaceColumnsHistory();
-						add.setFlag("0");
-						resultList.add(add);
-						data.setFlag("3");
-						resultList.add(data);//新增
 					}
-					if("2".equals(data.getFlag())) {//修改
-						data.setRed(red);
-						resultList.add(tmp);
-						resultList.add(data);
-					}
-					tmp = null;
+				}
+				if(isAdd) {//新增
+					DataInterfaceColumnsHistory history = new DataInterfaceColumnsHistory();
+					history.setFlag("0");
+					history.setRed("");
+					resultList.add(history);
+					DataInterfaceColumnsHistory history2 = new DataInterfaceColumnsHistory();
+					BeanUtils.copyProperties(tmp, history2);
+					history2.setFlag("3");
+					history2.setRed("");
+					resultList.add(history2);
+					addcount++;
 				}
 			}
+			
 		} catch (DataAccessException e) {
 			e.printStackTrace();
 		} catch (SecurityException e) {
@@ -143,10 +150,35 @@ public class DataColumnServiceImpl implements IDataColumnService{
 		} catch (IllegalAccessException e) {
 			e.printStackTrace();
 		}
-		//record.setExptSeqNbr("1.0.0");
-		//List<DataInterfaceHistory> historyList = hisMapper.queryAll(record);
+		if(queryAllTmp.size()-addcount<queryAll.size()) {
+			for(DataInterfaceColumns pro:queryAll) {
+				List<String> msgList = new ArrayList<String>();//修改的具体内容
+				boolean isLack = true;
+				for(DataInterfaceColumnsTmp tmp:queryAllTmp) {
+					if(tmp.getDataInterfaceName().equals(pro.getDataInterfaceName())) {
+						isLack = false;
+					}
+				}
+				if(isLack) {
+					DataInterfaceColumnsHistory history = new DataInterfaceColumnsHistory();
+					BeanUtils.copyProperties(pro, history);
+					history.setFlag("0");
+					history.setRed("");
+					resultList.add(history);
+					DataInterfaceColumnsHistory history2 = new DataInterfaceColumnsHistory();
+					history2.setFlag("4");
+					history2.setRed("");
+					resultList.add(history2);
+					//msgList.add("删除字段"+data.getColumnComment());
+				}
+			}
+		}
+		//info.setMsgMap(msgMap);
+		//cache.put(dataSrcAbbr+batchNo, info);
 		return resultList;
 	}
+	
+	public List<DataInterfaceColumnsHistory> queryColumnCompareBak(DataInterfaceColumnsHistory record) {return null;}
 	
 	@Override
 	public int insert(DataInterfaceColumns record) {
@@ -220,12 +252,22 @@ public class DataColumnServiceImpl implements IDataColumnService{
 		int colUpdateNum=0;
 		int colInsertNum=0;
 		int colAllNum=0;
-		ExcelUtil obj = ExcelUtil.getInstance();
-		List<DataInterfaceColumnsTmp> resultList = new ArrayList<DataInterfaceColumnsTmp>();
 		String dataSrcAbbr = record.getDataSrcAbbr();
+		String batchNo = record.getBatchNo();
+		ExcelUtil obj = ExcelUtil.getInstance();
+		Map<String,Object> cache=obj.getEntityMap();
+		ImportInfo info = (ImportInfo) cache.get(dataSrcAbbr+batchNo);
+		List<DataInterfaceColumnsTmp> resultList = new ArrayList<DataInterfaceColumnsTmp>();
+		List<DataInterfaceColumnsTmp> addList = new ArrayList<DataInterfaceColumnsTmp>();
+		List<DataInterfaceColumnsTmp> editList = new ArrayList<DataInterfaceColumnsTmp>();
+		
 		if(dataSrcAbbr!=null&&!"".equals(dataSrcAbbr)){
 			logger.info("导入临时表时，数据源是"+record.getDataSrcAbbr());
-			List<DataInterfaceColumnsTmp> queryAllTmp = mapper.queryAllTmp(record);
+			List<DataInterfaceColumnsTmp> queryAllTmp =info.getDataInterfaceColumnsTmpList();
+			DataInterfaceColumns data = new DataInterfaceColumns();
+			data.seteDate(TimeUtil.getTw());
+			data.setDataSrcAbbr(record.getDataSrcAbbr());
+			obj.initColumn(mapper.queryAll(data));
 			Map<String,String> columnMap =obj.getColumnMap(record.getDataSrcAbbr());
 			for(DataInterfaceColumnsTmp tmp:queryAllTmp){
 				String key = tmp.getDataInterfaceName()+tmp.getColumnNo();
@@ -234,18 +276,24 @@ public class DataColumnServiceImpl implements IDataColumnService{
 						tmp.setImportType("3");
 					}else{//修改
 						tmp.setImportType("2");
+						editList.add(tmp);
 						colUpdateNum++;
 					}
 				}else{//新增
 					tmp.setImportType("1");
+					addList.add(tmp);
 					colInsertNum++;
 				}
 				colAllNum++;
 				resultList.add(tmp);
 			}
-			obj.put(dataSrcAbbr+"colUpdateNum", colUpdateNum);
-			obj.put(dataSrcAbbr+"colInsertNum", colInsertNum);
-			obj.put(dataSrcAbbr+"colAllNum", colAllNum);
+			info.setColAllNum(colAllNum);
+			info.setColInsertNum(colInsertNum);
+			info.setColUpdateNum(colUpdateNum);
+			//批次号对应的新增接口列表
+			info.setAddColList(addList);
+			info.setEditColList(editList);
+			cache.put(dataSrcAbbr+batchNo, info);
 		}
 		return resultList;
 	}

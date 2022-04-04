@@ -7,6 +7,8 @@ var historyModel = {
 		var obj = {}
 		obj['dataSrcAbbr'] = idx;
 		initHistoryTable(obj);
+		//加载流水表最新一条数据
+    	historyModel.setIndexParam(idx);
 		//按条件查询用
 		//$("#inter_dataSrcAbbr").val(idx);
 	},
@@ -62,9 +64,9 @@ var historyModel = {
 						var detail = list[i];
 						var index = parseInt(i)+1;
 						if(i!=3){
-							str +='<td style="width=30%">('+index+')'+detail.dataInterfaceName+':'+detail.dataChange+'</td>';
+							str +='<td style="width:10%;align:left" >('+index+') '+detail.dataInterfaceName+':</td><td style="width:20%;align:left"> '+detail.dataChange+'</td>';
 						}else{
-							str +='</tr><tr><td>('+index+')'+detail.dataInterfaceName+':'+detail.dataChange+'</td>';
+							str +='</tr><tr><td style="width:10%;align:left">('+index+') '+detail.dataInterfaceName+': </td><td style="width:20%;align:left">'+detail.dataChange+'</td>';
 						}
 					}
 					str +='</tr>';

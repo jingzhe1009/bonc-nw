@@ -282,6 +282,9 @@
      <if test="dataInterfaceNo != null">
        and data_interface_no = #{dataInterfaceNo,jdbcType=VARCHAR}
      </if>
+     <if test="dataInterfaceName != null">
+       and data_interface_name = #{dataInterfaceName,jdbcType=VARCHAR}
+     </if>
      <if test="columnNo != null">
        and column_no = #{columnNo,jdbcType=INTEGER}
      </if>
@@ -322,6 +325,9 @@
      </if>
      <if test="columnNo != null">
        and column_no = #{columnNo,jdbcType=VARCHAR}
+     </if>
+     <if test="batchNo != null">
+       and batch_no = #{batchNo,jdbcType=VARCHAR}
      </if>
      order by data_src_abbr,data_interface_no,column_no
   </select>
@@ -404,6 +410,23 @@
 	    </foreach>
    </insert>
    <insert id="batchInsertPro" useGeneratedKeys="false"  parameterType="com.ljz.model.DataInterfaceColumns">
+	  insert into data_interface_columns (data_src_abbr, data_interface_no, column_no, 
+      data_interface_name, column_name, data_type, 
+      data_format, nullable, replacenull, 
+      comma, column_comment, isbucket,
+       iskey, isvalid, increment_field,
+       s_date, e_date)
+	  	values
+	    <foreach collection="list" item="model" separator=",">
+	      (#{model.dataSrcAbbr,jdbcType=VARCHAR}, #{model.dataInterfaceNo,jdbcType=VARCHAR}, #{model.columnNo,jdbcType=INTEGER}, 
+	      #{model.dataInterfaceName,jdbcType=VARCHAR}, #{model.columnName,jdbcType=VARCHAR}, #{model.dataType,jdbcType=VARCHAR}, 
+	      #{model.dataFormat,jdbcType=VARCHAR}, #{model.nullable,jdbcType=INTEGER}, #{model.replacenull,jdbcType=INTEGER}, 
+	      #{model.comma,jdbcType=VARCHAR}, #{model.columnComment,jdbcType=VARCHAR}, #{model.isbucket,jdbcType=VARCHAR},
+          #{model.iskey,jdbcType=VARCHAR}, #{model.isvalid,jdbcType=VARCHAR}, #{model.incrementfield,jdbcType=VARCHAR},
+	      #{model.sDate,jdbcType=DATE}, #{model.eDate,jdbcType=DATE})
+	    </foreach>
+   </insert>
+   <insert id="batchInsertProFromTmp" useGeneratedKeys="false"  parameterType="com.ljz.model.DataInterfaceColumnsTmp">
 	  insert into data_interface_columns (data_src_abbr, data_interface_no, column_no, 
       data_interface_name, column_name, data_type, 
       data_format, nullable, replacenull, 

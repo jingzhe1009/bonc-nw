@@ -2,7 +2,7 @@ package com.ljz.model;
 
 import java.io.Serializable;
 
-public class entityC2e extends entityC2eKey implements Serializable {
+public class entityC2e implements Serializable {
     private String ename;
 
     private Integer tLenb;
@@ -23,7 +23,7 @@ public class entityC2e extends entityC2eKey implements Serializable {
     }
 
     public void setCname(String cname) {
-        this.cname = cname == null ? null : cname.trim();
+        this.cname = cname == null ? null : cname;
     }
 
     public String getVersion() {

@@ -713,7 +713,7 @@ body{
 	vertical-align: middle;
 }
 .tree-menu li>a {
-    /* font-size:14px */
+    font-size:14px
 }
 .tree-menu li.active>a {
     color: #fff;

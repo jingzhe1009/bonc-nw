@@ -634,7 +634,7 @@ input[type=checkbox]:checked:before,
 * {
 	margin: 0;
 	padding: 0;
-	font-size: 12px;
+	font-size: 14px;
 }
 html, body {
 	height: 100%;

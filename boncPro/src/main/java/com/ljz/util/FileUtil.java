@@ -43,7 +43,7 @@ public class FileUtil {
 		String createFilePath = filePath.substring(0,filePath.lastIndexOf("/")+1);
 		File file = new File(createFilePath);
 		if (!file.exists()){
-			file.mkdir();
+			file.mkdirs();
 		}
 		try {
             fos=new FileOutputStream(filePath);

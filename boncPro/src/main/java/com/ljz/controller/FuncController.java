@@ -5,11 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
 
-import org.apache.poi.ss.usermodel.Workbook;
-import com.alibaba.fastjson.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,8 +20,6 @@ import com.ljz.entity.ParamEntity;
 import com.ljz.model.DataFuncConfig;
 import com.ljz.model.DataFuncRegister;
 import com.ljz.service.impl.DataFuncRegisterService;
-import com.ljz.util.FileUtil;
-import com.ljz.util.TimeUtil;
 
 @Controller
 @RequestMapping("/func")
@@ -72,7 +66,7 @@ public class FuncController extends MainController{
 	@RequestMapping(value="/createFunc",method = RequestMethod.POST)
 	@Transactional
     public Map<String, String> createFunc(DataFuncRegister record) {
-		Map<String, String> resultMap= new HashMap();
+		Map<String, String> resultMap= new HashMap<String, String>();
 		int existFunc = funcService.existFunc(record.getFuncName());
 		if (existFunc!=0){
 			resultMap.put("message","保存失败，函数已存在");

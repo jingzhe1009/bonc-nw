@@ -6,14 +6,11 @@ import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
-import com.ljz.constant.BoncConstant;
-import com.ljz.controller.MainController;
 import com.ljz.mapper.DataFuncConfigMapper;
 import com.ljz.mapper.DataFuncRegisterMapper;
 import com.ljz.model.DataFuncConfig;
 import com.ljz.model.DataFuncRegister;
 import com.ljz.service.IFuncRegisterService;
-import com.ljz.util.FileUtil;
 
 import javax.annotation.Resource;
 
@@ -50,7 +47,7 @@ public class DataFuncRegisterService implements IFuncRegisterService{
     @Override
 	public Map<String,String> insert(DataFuncRegister record) {
 		// TODO Auto-generated method stub
-		Map<String,String> resultMap = new HashMap();
+		Map<String,String> resultMap = new HashMap<String,String>();
 		String regex = "^\\w+$";
 		boolean is = record.getFuncName().matches(regex);
 		if (is==false){
@@ -65,7 +62,7 @@ public class DataFuncRegisterService implements IFuncRegisterService{
 	@Override
 	public Map<String,String> update(DataFuncRegister record) {
 		// TODO Auto-generated method stub
-		Map<String,String> resultMap = new HashMap();
+		Map<String,String> resultMap = new HashMap<String,String>();
 		String regex = "^\\w+$";
 		boolean is = record.getFuncName().matches(regex);
 		if (is==false){

@@ -150,18 +150,28 @@ function checkBtn(index, count) {
 				zUI.dialog.alert('<pre>请上传文件</pre>');
 				return;
 			}
+			infoModel.tmpInfoCheck();
+			localStorage.setItem(idx+"isModel",false);
+			localStorage.setItem(idx+"isSave",false);
 		}
 		//信息确认-下一步
 		if(index==4){
+			debugger;
 			var dataTable=$('#compareTable').DataTable();
 	    	var info=dataTable.page.info();
 	    	var dataRows =info.recordsTotal;
 	    	if(dataRows==0){
 	    		zUI.dialog.alert('<pre>接口没有变化,不会生成新版本</pre>');
-	    		//dataModelModel.init(localStorage.getItem("idx"));
 	    		return;
 	    	}
-			compareModel.importInfo();
+		}
+		//建模下一步
+		if(index==5){
+			console.log('建模');
+			if(localStorage.getItem(idx+"isModel")=="false"){
+				dataModelModel.insertDb();
+				localStorage.setItem(idx+"isModel",true);
+			}
 		}
 		
         methodBtn(index++, 'forward', false);
@@ -173,19 +183,24 @@ function checkBtn(index, count) {
 			/*非第一步的时候，显示上一步*/
 
 			//接口导入-下一步
-			if(index==3){
-				infoModel.tmpInfoCheck();
-			}
-			//信息确认
+//			if(index==3){
+//				infoModel.tmpInfoCheck();
+//				localStorage.setItem(idx+"isModel",false);
+//				localStorage.setItem(idx+"isSave",false);
+//			}
+			//信息确认加载
 			if(index==4){
 				compareModel.init(idx);
 			}
-			
-			
-			if(index==6){
-				console.log('建模');
-				dataModelModel.insertDb();
+			//建模加载
+			if(index==5){
+				if(localStorage.getItem(idx+"isSave")=="false"){
+					compareModel.importInfo();
+					localStorage.setItem(idx+"isSave",true);
+		    	}
 			}
+			
+			
 			/*else{
 				$("#btnBack").addClass("disabled");
 				$("#btnBack").removeClass("disabled");

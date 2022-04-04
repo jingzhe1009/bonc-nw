@@ -1,4 +1,4 @@
-/*package com.ljz.config;
+package com.ljz.config;
 
 import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.druid.support.http.StatViewServlet;
@@ -247,4 +247,4 @@ public class DruidConfiguration {
         }
     }
  
-}*/
+}

@@ -59,10 +59,38 @@ function initDetailTable(obj) {
 					return '-';
 				}
             }},
-            {"title": "数据源缩写", "data": "dataSrcAbbr","width":"10%"},
-            {"title": "接口编号", "data": "dataInterfaceNo","width":"10%" },
-            {"title": "接口名", "data": "dataInterfaceName" },
-            {"title": "字段编号", "data": "columnNo","width":"10%" },
+            {"title": "数据源缩写", "data": "dataSrcAbbr","width":"10%","render":function(data,type,row){
+            	debugger;
+				if(data==null){
+					return '-';
+				}else{
+					return data;
+				}
+            }},
+            {"title": "接口编号", "data": "dataInterfaceNo","width":"10%" ,"render":function(data,type,row){
+            	debugger;
+				if(data==null){
+					return '-';
+				}else{
+					return data;
+				}
+            }},
+            {"title": "接口名", "data": "dataInterfaceName","render":function(data,type,row){
+            	debugger;
+				if(data==null){
+					return '-';
+				}else{
+					return data;
+				}
+            } },
+            {"title": "字段编号", "data": "columnNo","width":"10%","render":function(data,type,row){
+            	debugger;
+				if(data==null){
+					return '-';
+				}else{
+					return data;
+				}
+            } },
             {"title": "字段名", "data": "columnName","render":function(data,type,row){
 				return compareModel.getData(row,data);
             } },

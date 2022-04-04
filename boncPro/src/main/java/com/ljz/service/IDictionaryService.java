@@ -3,9 +3,7 @@ package com.ljz.service;
 import java.util.List;
 
 import com.ljz.model.attrC2e;
-import com.ljz.model.attrC2eKey;
 import com.ljz.model.entityC2e;
-import com.ljz.model.entityC2eKey;
 
 
 public interface IDictionaryService {

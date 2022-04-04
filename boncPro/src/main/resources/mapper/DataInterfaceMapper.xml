@@ -364,6 +364,24 @@
 	    </foreach>
 	</insert>
 	
+	<insert id="batchInsertProFromTmp" useGeneratedKeys="false"  parameterType="com.ljz.model.DataInterfaceTmp">
+	  insert into data_interface (data_src_abbr, data_interface_no, data_interface_name, 
+      data_interface_desc, data_load_freq, data_load_mthd, 
+      filed_delim, line_delim, extrnl_database_name, 
+      intrnl_database_name, extrnl_table_name, intrnl_table_name, 
+      table_type, bucket_number, s_date, e_date)
+	  	values
+	    <foreach collection="list" item="model" separator=",">
+	      (#{model.dataSrcAbbr,jdbcType=VARCHAR}, #{model.dataInterfaceNo,jdbcType=VARCHAR}, #{model.dataInterfaceName,jdbcType=VARCHAR}, 
+	      #{model.dataInterfaceDesc,jdbcType=VARCHAR}, #{model.dataLoadFreq,jdbcType=VARCHAR}, #{model.dataLoadMthd,jdbcType=VARCHAR}, 
+	      #{model.filedDelim,jdbcType=VARCHAR}, #{model.lineDelim,jdbcType=VARCHAR}, #{model.extrnlDatabaseName,jdbcType=VARCHAR}, 
+	      #{model.intrnlDatabaseName,jdbcType=VARCHAR}, #{model.extrnlTableName,jdbcType=VARCHAR}, #{model.intrnlTableName,jdbcType=VARCHAR}, 
+	      #{model.tableType,jdbcType=VARCHAR}, #{model.bucketNumber,jdbcType=INTEGER}, #{model.sDate,jdbcType=DATE}, 
+	      #{model.eDate,jdbcType=DATE})
+	    </foreach>
+	</insert>
+	
+	
 	<insert id="batchInsertHis" useGeneratedKeys="false"  parameterType="com.ljz.model.DataInterfaceHistory">
 	  insert into data_interface_history (need_vrsn_nbr,expt_seq_nbr,data_src_abbr, data_interface_no, data_interface_name, 
       data_interface_desc, data_load_freq, data_load_mthd, 
